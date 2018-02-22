@@ -45,6 +45,12 @@
   background-color:rgba(255,255,250,.7);
   border:1px solid black;
   margin:20px;
+  width:200px;
+ }
+.clickText {
+  border-bottom:1px solid black;
+  margin:5px;
+  padding-bottom:5px;
 }
 #title{
   position:absolute;
@@ -54,16 +60,35 @@
   padding:10px;
   font-size:16px;
 }
+.dropdown {
+    display: block;
+    position: relative;
+    display: inline-block;
+    font-size:16px;
+    background-color:rgba(0,0,0,0);
+    border:1px solid black;
+    padding:3px;
+    border-radius:0px;
+    text-decoration:underline;
+}
+.option{
+  background-color:rgba(0,0,0,1);
+  color:#aaa;
+}
+select {
+   -webkit-appearance: none; 
+   -moz-appearance: none;
+   appearance: none;       /* remove default arrow */
+}
 </style>
 
 <div id='map'></div>
 <div id='text'></div>
-<div id='title'>Click on census tract to see all tracts with same population density</div>
+<div id='title'>Click on census tract to see all tracts with similar  </div>
 
 <!--<div id='map-overlay' class='map-overlay'></div>-->
 
 <script>
-
 </script>
 
 <script src='alike.js'></script>

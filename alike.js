@@ -1,17 +1,41 @@
+//show popups of mouseover already highlighted areas
+
+//show total for all clicks
+//get standard diviations and use as threshold
+
+
 $(function() {
   	queue()
       .defer(d3.csv,"R11591277_SL140.csv")
-      .defer(d3.json,"census_keys.json")
+      .defer(d3.json,"census_keys_short.json")
       .await(dataDidLoad);
   })
-var colors = ["#c1d098","#7dde49","#6b7b3e","#cbcf49","#69b95a"]
+var colors = ["#c1d098","#7dde49","#6b7b3e","#cbcf49","#69b95a","#d39433","#2679a7","#b38f60","#cde144","#4a81e7","#6edc50","#56e1a6","#549735","#279564","#2367b7"]
 var dataDictionary = {}
+var clickCount = 0
+var currentCategory = "T002_002"
+var notPercentCategories = ["T057_001","T059_001","T083_001","T147_001","T002_001","T002_002","T002_003","T157_001"]
+
 function dataDidLoad(error,censusData,keys){
+    console.log("data loaded")
     dataDictionary = keys
-    var formatted = formatCensusDictionary(censusData)
-    console.log(censusData[0])
+    var percentFormatted = formatCensusAsPercents(censusData)
+    console.log(percentFormatted[0])
+    var notDropdown = ["T002_001","T004_001","T005_001","T007_001","T013_001","T025_001","T030_001","T050_001","T053_001","T056_001","T078_001","T080_001","T081_001","T094_001","T108_001","T182_001","T139_001","T145_001"]
     
-    setupMap(censusData)
+    var select = d3.select("#title").append("select").attr("class","dropdown").attr("id","dropdown").attr("name","dropdown")
+    for(var k in keys){
+        if(notDropdown.indexOf(k)==-1){
+            select.append("option").attr("class","option").attr("value",k).html(keys[k])
+        }
+    }
+    document.getElementById("dropdown").onchange=function(){
+        console.log(this.value)
+        currentCategory=this.value
+    }
+    
+  //  var formatted = formatCensusDictionary(censusData)    
+    setupMap(percentFormatted)
 }
 function formatCensusDictionary(censusData){
     var formatted = {}
@@ -25,6 +49,36 @@ function formatCensusDictionary(censusData){
     }    
     return formatted
 }
+function formatCensusAsPercents(censusData){
+    var formatted = []
+    var categoriesToInclude = Object.keys(dataDictionary)
+    
+    for(var i in censusData){
+        var row = censusData[i]
+        var gid = row["Geo_GEOID"]
+        //formatted[gid]={}
+        var entry = {}
+        for(var r in row){
+            
+            if(categoriesToInclude.indexOf(r.replace("SE_",""))>-1||r.split("_")[0]=="Geo"){            
+                if(r.split("_")[2]!="001" && r.split("_")[0]!="Geo"&&notPercentCategories.indexOf(r.replace("SE_",""))==-1){
+                    var totalKey = r.split("_")[0]+"_"+r.split("_")[1]+"_001"
+                    var totalValue = parseInt(row[totalKey])
+                    var value = parseInt(row[r])
+                    var percent = value/totalValue*100
+                    entry[r]= percent
+                
+            }else if(notPercentCategories.indexOf(r.replace("SE_",""))>-1||r.split("_")[0]=="Geo"){
+                entry[r]= row[r]
+            }
+        }
+        }
+        formatted.push(entry)
+       // break
+    }
+   // console.log(formatted)
+    return formatted
+}
 
 function setupMap(censusData){
     mapboxgl.accessToken = 'pk.eyJ1IjoiampqaWlhMTIzIiwiYSI6ImNpbDQ0Z2s1OTN1N3R1eWtzNTVrd29lMDIifQ.gSWjNbBSpIFzDXU2X5YCiQ';
@@ -32,103 +86,118 @@ function setupMap(censusData){
         container: 'map',
         style: 'mapbox://styles/jjjiia123/cjdurroku5gm62sonjjyahriu',
         center: [-98, 38.88],
-        minZoom: 2,
+        minZoom: 3,
         zoom: 6
     });
     map.on('load', function() {
-            addTracts(map,censusData)
-         });
-}
-
-function addTracts(map,censusData){
-    map.addSource('tractseast',{
-        "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/alike/master/east.geojson'
-    })
-    map.addSource('tractswest',{
-        "type":"geojson",
-        "data":'https://raw.githubusercontent.com/jjjiia/alike/master/west.geojson'
-    })
-    map.addLayer({
-            "id": "tracts_east",
-            "type": "fill",
-            "source": 'tractseast',
-            "paint": {
-                "fill-outline-color": "rgba(0,0,0,.1)",
-                "fill-color": "rgba(0,0,0,.05)",
-            }
+        map.addControl(new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true
+            },
+            trackUserLocation: true
+        }));
+        d3.select(".mapboxgl-ctrl-bottom-right").remove()
+        map.addSource('tractseast',{
+            "type":"geojson",
+            "data":'https://raw.githubusercontent.com/jjjiia/alike/master/east.geojson'
         })
+        map.addSource('tractswest',{
+            "type":"geojson",
+            "data":'https://raw.githubusercontent.com/jjjiia/alike/master/west.geojson'
+        })
+        map.addLayer({
+                "id": "tracts_east",
+                "type": "fill",
+                "source": 'tractseast',
+                "paint": {
+                    "fill-outline-color": "rgba(255,255,255,1)",
+                    "fill-color": "rgba(0,0,0,.05)",
+                }
+        },"road_major_label")
         map.addLayer({
                 "id": "tracts_west",
                 "type": "fill",
                 "source": 'tractswest',
                 "paint": {
-                    "fill-outline-color": "rgba(0,0,0,.1)",
-                "fill-color": "rgba(0,0,0,.05)",
+                    "fill-outline-color": "rgba(255,255,255,1)",
+                    "fill-color": "rgba(0,0,0,.05)",
                 }
-            })
+        },"road_major_label")
+        
+     
+        
+        map.on("click",  "tracts_west", function(e) {
+            clickCount +=1
+            eraseOldestClick(map,clickCount-3)
+            var gid = e.features[0].properties[ "AFFGEOID"]
+            addTracts(map,censusData,gid,"west")
+            addTracts(map,censusData,gid,"east")
+            filterGeos(map,censusData,gid) 
+        })
+        map.on("click",  "tracts_east", function(e) {
+            clickCount +=1
+            eraseOldestClick(map,clickCount-3)
+            var gid = e.features[0].properties[ "AFFGEOID"]
+            addTracts(map,censusData,gid,"east")
+            addTracts(map,censusData,gid,"west")
+            filterGeos(map,censusData,gid) 
             
-            
-     map.addLayer({
-             "id": "tracts_highlight_east",
-             "type": "fill",
-            "source": 'tractseast',
-             "paint": {
-                 "fill-outline-color": "rgba(0,0,0,.5)",
-                     "fill-color": "rgba(255,255,255,1)",
-             },
-             "filter": ["in", "FIPS", ""]
-         })
-         map.addLayer({
-                 "id": "tracts_highlight_west",
-                 "type": "fill",
-                "source": 'tractswest',
-                 "paint": {
-                     "fill-outline-color": "rgba(0,0,0,.5)",
-                     "fill-color": "rgba(255,255,255,1)",
-                 },
-                 "filter": ["in", "FIPS", ""]
-             })
+        })
+    });
+}
+function eraseOldestClick(map,oldestClickNumber){
+    if(oldestClickNumber>1){
+        d3.select(".text_"+oldestClickNumber).remove()
+        map.removeLayer("tracts_highlight_east_"+oldestClickNumber)
+        map.removeLayer("tracts_highlight_west_"+oldestClickNumber)
+        map.removeLayer("tracts_filtered_east_"+oldestClickNumber)
+        map.removeLayer("tracts_filtered_west_"+oldestClickNumber)
+        
+    }
+}
+function addTracts(map,censusData,gid,ew){
+    
+            map.addLayer({
+                    "id": "tracts_highlight_"+ew+"_"+clickCount,
+                    "type": "fill",
+                   "source": 'tracts'+ew,
+                    "paint": {
+                        "fill-outline-color": colors[clickCount%(colors.length-1)],
+                            "fill-color": colors[clickCount%(colors.length-1)],
+                    },
+                    "filter": ["in", "FIPS", ""]
+                })
+
          
              map.addLayer({
-                     "id": "tracts_filtered_east",
+                     "id": "tracts_filtered_"+ew+"_"+clickCount,
                      "type": "fill",
-                    "source": 'tractseast',
+                    "source": 'tracts'+ew,
                      "paint": {
-                         "fill-outline-color": "red",//"rgba(0,0,0,.5)",
-                             "fill-color": "rgba(255,255,255,1)",
+                         "fill-outline-color": colors[clickCount%(colors.length-1)],//"rgba(0,0,0,.5)",
+                             "fill-color": colors[clickCount%(colors.length-1)],
+                         "fill-opacity":.4
                      },
                      "filter": ["in", "FIPS", ""]
-                 })
-                 map.addLayer({
-                         "id": "tracts_filtered_west",
-                         "type": "fill",
-                        "source": 'tractswest',
-                         "paint": {
-                             "fill-outline-color": "red",//"rgba(0,0,0,.5)",
-                             "fill-color": "rgba(255,255,255,1)",
-                         },
-                         "filter": ["in", "FIPS", ""]
-                     })
+                 },"road_major_label")
+            
          
          
+} 
+function filterGeos(map,censusData,gid) {       
          
-         
-         map.on("click", "tracts_east", function(e) {
-             map.setFilter("tracts_highlight_east", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
-             map.setFilter("tracts_highlight_west", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
-             var gid = e.features[0].properties["AFFGEOID"].replace("1400000US","14000US")
-             getMatches(gid,censusData,map)
-         });
-         map.on("click", "tracts_west", function(e) {
-             map.setFilter("tracts_highlight_west", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
-             map.setFilter("tracts_highlight_east", ["==",  "AFFGEOID", e.features[0].properties[ "AFFGEOID"]]);
-             var gid = e.features[0].properties["AFFGEOID"].replace("1400000US","14000US")
-             getMatches(gid,censusData,map)
-         }); 
-}
+      //   map.on("click", "tracts_east", function(e) {
+             map.setFilter("tracts_highlight_east_"+clickCount, ["==",  "AFFGEOID", gid]);
+             map.setFilter("tracts_highlight_west_"+clickCount, ["==",  "AFFGEOID", gid]);
+             var gidShort = gid.replace("1400000US","14000US")
+             getMatches(gidShort,censusData,map)
+        // });
+    }
+    
+
+
 function getMatches(gid,census,map){
-    var densityCat = "SE_T002_002"
+    var category = "SE_"+currentCategory
     var threshold = 10//in percent    
     var matchedId = census.filter(function(el){
        // console.log(el)
@@ -136,11 +205,13 @@ function getMatches(gid,census,map){
             return el
         }
     })
-    var cDensity= matchedId[0][densityCat]
-    var filteredData = filterByData(census,threshold,densityCat,cDensity)
+    console.log(matchedId[0])
+    var value= parseFloat(matchedId[0][category])
+    var gidName = matchedId[0]["Geo_NAME"]
+    var filteredData = filterByData(census,threshold,category,value)
     var filteredStats = calculateFiltered(filteredData)
-    var text = translateStats(filteredStats)
-    d3.select("#text").html(text)
+    var text = "<strong>"+gidName+ " has "+Math.round(value*10000)/1000+" "+dataDictionary[currentCategory]+"</strong><br/>"+translateStats(filteredStats)
+    d3.select("#text").append("div").attr("class","clickText text_"+clickCount).html(text).style("color",colors[clickCount%(colors.length-1)])
     
     filterMap(filteredData,map)
 }
@@ -152,8 +223,8 @@ function filterMap(filteredData,map){
         gids.push(gid)
     }
     var filter = ["in","AFFGEOID"].concat(gids)
-    map.setFilter("tracts_filtered_west", filter);
-    map.setFilter("tracts_filtered_east", filter);
+    map.setFilter("tracts_filtered_west"+"_"+clickCount, filter);
+    map.setFilter("tracts_filtered_east"+"_"+clickCount, filter);
 }
 
 function translateStats(filteredStats){
@@ -163,20 +234,21 @@ function translateStats(filteredStats){
         if(i != "tracts"){
             text+= filteredStats[i]+" "+dataDictionary[i]+"<br/>"
         }else{
-            tracts +=filteredStats[i]+" other tracts have the similar population density (less than 10% difference), containing: <br/>"
+            tracts +=filteredStats[i]+" other tracts are similar*, containing: <br/>"
         }
         
     }
-    return tracts+text
+    return tracts+text 
 }
 function calculateFiltered(filteredData){
-    var columnsToSum = ["T004_001","T002_003","T145_002","T139_001","T056_001","T013_002","T013_003","T013_004","T013_005"]
+    
+    var columnsToSum = ["T002_001","T002_003"]
     var formatted = {}
     for(var i in columnsToSum){
         var c = columnsToSum[i]
-        var sum = d3.sum(filteredData, function(d) { 
-            return d["SE_"+c]; });  
-        formatted[c]=sum   
+        var sum = d3.sum(filteredData, function(d){
+            return d["SE_"+c];});  
+        formatted[c]=Math.round(sum).toLocaleString()
     }
     formatted["tracts"]=filteredData.length
     return formatted
@@ -184,8 +256,14 @@ function calculateFiltered(filteredData){
 
 function filterByData(census,threshold,category,value){
     var withinThreshold = census.filter(function(el){
-        if(el[category]<value*(1+threshold/100) && el[category]>value*(1-threshold/100)){
-            return el["Geo_GEOID"]
+        if(notPercentCategories.indexOf(category)==-1){
+            if(Math.round(el[category])==Math.round(value)){
+                return el["Geo_GEOID"]
+            }
+        }else{
+            if(el[category]<value*(1+threshold/100) && el[category]>value*(1-threshold/100)){
+                return el["Geo_GEOID"]
+            }
         }
     })
     return withinThreshold
