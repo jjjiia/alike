@@ -6,7 +6,8 @@
 
 $(function() {
   	queue()
-      .defer(d3.csv,"R11591277_SL140.csv")
+      .defer(d3.csv,"census_percent_2places.csv")
+    .defer(d3.csv,"geo_names.csv")
       .defer(d3.json,"census_keys_short.json")
       .await(dataDidLoad);
   })
@@ -15,13 +16,13 @@ var dataDictionary = {}
 var clickCount = 0
 var currentCategory = "T002_002"
 var notPercentCategories = ["T057_001","T059_001","T083_001","T147_001","T002_001","T002_002","T002_003","T157_001"]
-
-function dataDidLoad(error,censusData,keys){
-    console.log("data loaded")
+var tractNames =null
+function dataDidLoad(error,censusData,geoNames,keys){
     dataDictionary = keys
-    var percentFormatted = formatCensusAsPercents(censusData)
-    console.log(percentFormatted[0])
-    var notDropdown = ["T002_001","T004_001","T005_001","T007_001","T013_001","T025_001","T030_001","T050_001","T053_001","T056_001","T078_001","T080_001","T081_001","T094_001","T108_001","T182_001","T139_001","T145_001"]
+    
+    tractNames = makeGeoNamesDict(geoNames)
+    //var percentFormatted = formatCensusAsPercents(censusData)
+    var notDropdown = ["T002_001","T002_003","T004_001","T005_001","T007_001","T013_001","T025_001","T030_001","T050_001","T053_001","T056_001","T078_001","T080_001","T081_001","T094_001","T108_001","T182_001","T139_001","T145_001"]
     
     var select = d3.select("#title").append("select").attr("class","dropdown").attr("id","dropdown").attr("name","dropdown")
     for(var k in keys){
@@ -30,55 +31,54 @@ function dataDidLoad(error,censusData,keys){
         }
     }
     document.getElementById("dropdown").onchange=function(){
-        console.log(this.value)
+//        console.log(this.value)
         currentCategory=this.value
     }
-    
-  //  var formatted = formatCensusDictionary(censusData)    
-    setupMap(percentFormatted)
+    setupMap(censusData)
 }
-function formatCensusDictionary(censusData){
+function makeGeoNamesDict(geoNames){
     var formatted = {}
-    for(var i in censusData){
-        var row = censusData[i]
-        var gid = row["Geo_GEOID"]
-        formatted[gid]={}
-        for(var r in row){
-            formatted[gid][r]=row[r]
-        }
-    }    
-    return formatted
-}
-function formatCensusAsPercents(censusData){
-    var formatted = []
-    var categoriesToInclude = Object.keys(dataDictionary)
-    
-    for(var i in censusData){
-        var row = censusData[i]
-        var gid = row["Geo_GEOID"]
-        //formatted[gid]={}
-        var entry = {}
-        for(var r in row){
-            
-            if(categoriesToInclude.indexOf(r.replace("SE_",""))>-1||r.split("_")[0]=="Geo"){            
-                if(r.split("_")[2]!="001" && r.split("_")[0]!="Geo"&&notPercentCategories.indexOf(r.replace("SE_",""))==-1){
-                    var totalKey = r.split("_")[0]+"_"+r.split("_")[1]+"_001"
-                    var totalValue = parseInt(row[totalKey])
-                    var value = parseInt(row[r])
-                    var percent = value/totalValue*100
-                    entry[r]= percent
-                
-            }else if(notPercentCategories.indexOf(r.replace("SE_",""))>-1||r.split("_")[0]=="Geo"){
-                entry[r]= row[r]
-            }
-        }
-        }
-        formatted.push(entry)
-       // break
+    for(var g in geoNames){
+        var geoName = geoNames[g]["Geo_NAME"]
+        var geoId = geoNames[g]["Geo_GEOID"]
+        formatted[geoId]=geoName
     }
-   // console.log(formatted)
     return formatted
 }
+
+//function formatCensusAsPercents(censusData){
+//    console.log(["start processing",censusData[0]])
+//    var formatted = []
+//    var categoriesToInclude = Object.keys(dataDictionary)
+//    
+//    for(var i in censusData){
+//        var row = censusData[i]
+//        var gid = row["Gid"]
+//        //formatted[gid]={}
+//        var entry = {}
+//        for(var r in row){
+//            
+//            if(categoriesToInclude.indexOf(r.replace("SE_",""))>-1||r.split("_")[0]=="Geo"){            
+//                if(r.split("_")[2]!="001" && r.split("_")[0]!="Geo"&&notPercentCategories.indexOf(r.replace("SE_",""))==-1){
+//                    var totalKey = r.split("_")[0]+"_"+r.split("_")[1]+"_001"
+//                    var totalValue = parseInt(row[totalKey])
+//                    var value = parseInt(row[r])
+//                    var percent = value/totalValue*100
+//                    entry[r]= percent
+//                
+//            }else if(notPercentCategories.indexOf(r.replace("SE_",""))>-1||r.split("_")[0]=="Geo"){
+//                entry[r]= row[r]
+//            }
+//        }
+//        }
+//        formatted.push(entry)
+//       // break
+//    }
+//   // console.log(formatted)
+//    console.log(["end processing",formatted[0]])
+//    
+//    return formatted
+//}
 
 function setupMap(censusData){
     mapboxgl.accessToken = 'pk.eyJ1IjoiampqaWlhMTIzIiwiYSI6ImNpbDQ0Z2s1OTN1N3R1eWtzNTVrd29lMDIifQ.gSWjNbBSpIFzDXU2X5YCiQ';
@@ -201,16 +201,18 @@ function getMatches(gid,census,map){
     var threshold = 10//in percent    
     var matchedId = census.filter(function(el){
        // console.log(el)
-        if(el["Geo_GEOID"]==gid){
+        if(el["Gid"]==gid){
             return el
         }
     })
-    console.log(matchedId[0])
     var value= parseFloat(matchedId[0][category])
-    var gidName = matchedId[0]["Geo_NAME"]
+    console.log(value)
+    var gidName = tractNames[matchedId[0].Gid]
     var filteredData = filterByData(census,threshold,category,value)
     var filteredStats = calculateFiltered(filteredData)
-    var text = "<strong>"+gidName+ " has "+Math.round(value*10000)/1000+" "+dataDictionary[currentCategory]+"</strong><br/>"+translateStats(filteredStats)
+    
+    console.log(filteredData)
+    var text = "<strong>"+gidName+ " has "+value+" "+dataDictionary[currentCategory]+"</strong><br/>"+translateStats(filteredStats)
     d3.select("#text").append("div").attr("class","clickText text_"+clickCount).html(text).style("color",colors[clickCount%(colors.length-1)])
     
     filterMap(filteredData,map)
@@ -219,7 +221,7 @@ function getMatches(gid,census,map){
 function filterMap(filteredData,map){
     var gids = []
     for(var i in filteredData){
-        var gid = filteredData[i]["Geo_GEOID"].replace("14000US","1400000US")
+        var gid = filteredData[i]["Gid"].replace("14000US","1400000US")
         gids.push(gid)
     }
     var filter = ["in","AFFGEOID"].concat(gids)
@@ -255,14 +257,15 @@ function calculateFiltered(filteredData){
 }
 
 function filterByData(census,threshold,category,value){
+    
     var withinThreshold = census.filter(function(el){
         if(notPercentCategories.indexOf(category)==-1){
             if(Math.round(el[category])==Math.round(value)){
-                return el["Geo_GEOID"]
+                return el["Gid"]
             }
         }else{
             if(el[category]<value*(1+threshold/100) && el[category]>value*(1-threshold/100)){
-                return el["Geo_GEOID"]
+                return el["Gid"]
             }
         }
     })
