@@ -83,8 +83,8 @@ def jsonToCsv():
         
 #jsonToCsv()
 
-print u" Do\xd0a Ana County, New Mexico"
-print unicode("Do\xd0a Ana County, New Mexico","utf-8")
+#print u" Do\xd0a Ana County, New Mexico"
+#print unicode("Do\xd0a Ana County, New Mexico","utf-8")
 
 def csvToJson():
     out = {}
@@ -98,4 +98,23 @@ def csvToJson():
             #print name,str(name)
     with open("geo_names.json","w")as outfile:
         json.dump(out,outfile)
-csvToJson()
+#csvToJson()
+
+dictionary = {}
+with open("deviation_format.csv","w")as csvOut:
+    csvWriter=csv.writer(csvOut)
+    with open("deviation.csv","Ur")as infile:
+        csvReader = csv.reader(infile)
+        for row in csvReader:
+            headers = row
+            break
+      #  csvReader.next()
+        for row in csvReader:
+            data = row
+            break
+        for h in range(len(headers)):
+            print headers[h],data[h]
+            dictionary[headers[h]]=data[h]
+            csvWriter.writerow([headers[h],data[h]])
+with open("deviation.json","w") as outfile:
+    json.dump(dictionary,outfile)

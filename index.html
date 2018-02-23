@@ -39,13 +39,15 @@
 <style>
 #text{
   position:absolute;
+  top:50px;
   left:0px;
-  top:100px;
   padding:10px;
-  background-color:rgba(255,255,250,.7);
+  background-color:rgba(255,255,250,.9);
   border:1px solid black;
   margin:20px;
   width:200px;
+  max-height:50%;
+  overflow:auto;
  }
 .clickText {
   border-bottom:1px solid black;
@@ -53,26 +55,23 @@
   padding-bottom:5px;
 }
 #title{
-  position:absolute;
-  left:0px;
-  top:50px;
-  margin:20px;
-  padding:10px;
   font-size:16px;
+  background-color:rgba(255,255,255,.8);
+  
 }
 .dropdown {
     display: block;
     position: relative;
     display: inline-block;
     font-size:16px;
-    background-color:rgba(0,0,0,0);
+    background-color:rgba(255,255,255,.8);
     border:1px solid black;
     padding:3px;
     border-radius:0px;
     text-decoration:underline;
 }
 .option{
-  background-color:rgba(0,0,0,1);
+  background-color:rgba(255,255,255,.8);
   color:#aaa;
 }
 select {
@@ -81,19 +80,50 @@ select {
    appearance: none;       /* remove default arrow */
 }
 #header{
-  font-size:48px;
+  font-size:24px;
+  letter-spacing:2px;
   position:absolute;
   top:0px;
   left:0px;
-  padding:30px;
+  padding:10px;
+  width:100%;
+  background-color:rgba(255,255,255,.8);
+  border-bottom:1px solid black;
+}
+#clearAll{
+  background-color:rgba(255,255,255,1);
+  border:1.5px solid #dedede;
+  border-radius:5px;
+  padding:5px;
+  margin:8px;
+  position:absolute;
+  right:40px;
+  top:0px;
+  cursor:pointer;
+  font-weight:bold;
+}
+#loader{
+  width:100%;
+  height:100%;
+  position:absolute;
+  right:0px;
+  top:0px;
+  background-color:rgba(120, 219, 83,.8);
+  font-size:20vw;
+  z-index:999;
+  color:rgba(255,255,255,.8);
+  text-align: center;
+  font-weight:bold;
 }
 </style>
-
+<div id="loader">LOADING</div>
 <div id='map'></div>
-<div id='text'></div>
-<div id='header'>ALIKE MAP</div>
-<div id='title'>Click on census tract to see all tracts with similar  </div>
 
+<div id='header'>
+  <div id='title'>Click on census tract to see all tracts with similar  </div>
+</div>
+  <div id='text'></div>
+  <div id = "clearAll">Clear All</div>
 <!--<div id='map-overlay' class='map-overlay'></div>-->
 
 <script>
