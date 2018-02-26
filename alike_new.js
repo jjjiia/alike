@@ -62,6 +62,9 @@ function setupMap(censusData){
         minZoom: 3,
         zoom: 6
     });
+    map.addControl(new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken
+    }));
     map.on('load', function() {
         d3.select("#loader").remove()
         d3.select("#zoomOut")
@@ -230,6 +233,7 @@ function getMatches(gid,census,map){
             var count = d3.select(this).attr("class").split("_")[1]
             d3.select(".exit_"+count).remove()
             d3.select(".text_"+count).remove()
+            d3.select(".text2_"+count).remove()
             map.removeLayer("tracts_filtered_east_"+count)
             map.removeLayer("tracts_filtered_west_"+count)
             map.removeLayer("tracts_highlight_east_"+count)
