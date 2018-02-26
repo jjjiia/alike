@@ -99,22 +99,33 @@ def csvToJson():
     with open("geo_names.json","w")as outfile:
         json.dump(out,outfile)
 #csvToJson()
-
-dictionary = {}
-with open("deviation_format.csv","w")as csvOut:
-    csvWriter=csv.writer(csvOut)
-    with open("deviation.csv","Ur")as infile:
+def getDeviation():
+    dictionary = {}
+    with open("deviation_format.csv","w")as csvOut:
+        csvWriter=csv.writer(csvOut)
+        with open("deviation.csv","Ur")as infile:
+            csvReader = csv.reader(infile)
+            for row in csvReader:
+                headers = row
+                break
+          #  csvReader.next()
+            for row in csvReader:
+                data = row
+                break
+            for h in range(len(headers)):
+                print headers[h],data[h]
+                dictionary[headers[h]]=data[h]
+                csvWriter.writerow([headers[h],data[h]])
+    with open("deviation.json","w") as outfile:
+        json.dump(dictionary,outfile)
+        
+        
+def makeHistogram():
+    with open("R11591277_SL140.csv","Ur")as infile:
         csvReader = csv.reader(infile)
         for row in csvReader:
-            headers = row
+            print row
             break
-      #  csvReader.next()
-        for row in csvReader:
-            data = row
-            break
-        for h in range(len(headers)):
-            print headers[h],data[h]
-            dictionary[headers[h]]=data[h]
-            csvWriter.writerow([headers[h],data[h]])
-with open("deviation.json","w") as outfile:
-    json.dump(dictionary,outfile)
+            
+            
+makeHistogram()
