@@ -87,10 +87,11 @@ function dataDidLoad(error,censusData,geoNames,keys,deviationFile,minMaxFile,his
             select.append("option").attr("class","option").attr("value",k).html(keys[k])
         }
     }
+    
     document.getElementById("dropdown").onchange=function(){
 //        console.log(this.value)
         currentCategory=this.value
-    }
+    }    
     setupMap(censusData)
 }
 function makeGeoNamesDict(geoNames){
@@ -150,6 +151,7 @@ function setupMap(censusData){
             for(var i=0; i<100; i+=1){
                 d3.select(".text_"+i).remove()
                 d3.select(".text2_"+i).remove()
+                d3.select(".slider_"+i).remove()
                 if (map.getLayer("tracts_filtered_west_"+i)) {
                     map.removeLayer("tracts_filtered_west_"+i)
                 }
@@ -208,6 +210,7 @@ function setupMap(censusData){
                 var clickedFilter = url.clicks[i]
                 var fClickNumber = i
                 var fGid = "1400000US"+clickedFilter[0]
+                var fGidS = "14000US"+clickedFilter[0]
                 var fFilterValue = clickedFilter[1]
                 var fCategory = clickedFilter[2]
                 console.log([clickedFilter, fGid, fFilterValue,fCategory,fClickNumber])
@@ -221,9 +224,35 @@ function setupMap(censusData){
 //                filterGeos(map,censusData,fGid)
              var gidShort = fGid.replace("1400000US","14000US")
           //   getMatches(gidShort,censusData,map,fClickNumber)
-            filterGeos(map,censusData,gidShort,fClickNumber)
+              //  filterGeos(map,censusData,gidShort,fClickNumber)
+                console.log(currentCategory)
+                console.log(fCategory)
+                currentCategory = fCategory
+              //  var matchedId = censusData.filter(function(el){
+              //     // console.log(el)
+              //      if(el["Gid"]==fGidS){
+              //          return el
+              //      }
+              //  })
+              //  console.log(matchedId)
+              //  var value= parseFloat(matchedId[0][currentCategory])
+              //  console.log(value)
+              //  var filteredData = filterByData(censusData,fFilterValue,currentCategory,value)
+              //  var filteredStats = calculateFiltered(filteredData,currentCategory)
+              //  var gidName = tractNames["14000US"+url.clicks[fClickNumber ][0]]
+              //
+              //  var text = "<strong>"+gidName+ " has "+value+" "+dataDictionary[currentCategory.replace("SE_","")]
+               // +"</strong><br/>"
                 
+                filterGeos(map,censusData,gidShort,fClickNumber,fFilterValue)
+            
+                //var text2 = translateStats(filteredStats,fFilterValue)
+                //d3.select(".text2_"+fClickNumber ).html(text2)
+                //d3.select(".text_"+fClickNumber ).html(text)
+                //filterMap(filteredData,map,fClickNumber )
             }
+            $("#dropdown").val(currentCategory);
+            
         }
  
         
@@ -236,7 +265,7 @@ function setupMap(censusData){
             updateUrl(map)
             addTracts(map,censusData,gid,"west",clickCount)
             addTracts(map,censusData,gid,"east",clickCount)
-            filterGeos(map,censusData,gid,clickCount)
+            filterGeos(map,censusData,gid,clickCount,10)
             
         })
       //  map.on("click",  "tracts_east", function(e) {
@@ -278,21 +307,21 @@ function addTracts(map,censusData,gid,ew,click){
          
          
 } 
-function filterGeos(map,censusData,gid,click) {       
+function filterGeos(map,censusData,gid,click,threshold) {       
          console.log(["filterGeos",click])
       //   map.on("click", "tracts_east", function(e) {
              map.setFilter("tracts_highlight_east_"+click, ["==",  "AFFGEOID", gid]);
              map.setFilter("tracts_highlight_west_"+click, ["==",  "AFFGEOID", gid]);
              var gidShort = gid.replace("1400000US","14000US")
-             getMatches(gidShort,censusData,map,click)
+             getMatches(gidShort,censusData,map,click,threshold)
         // });
 }
 
-function getMatches(gid,census,map,click){
+function getMatches(gid,census,map,click,threshold){
     console.log(["getMatches",click])
     var category = "SE_"+currentCategory
     //var threshold = 10//in percent    
-    var threshold = 10//deviation[category]
+   // var threshold = 10//deviation[category]
    // console.log(category)
     var matchedId = census.filter(function(el){
        // console.log(el)
@@ -324,6 +353,7 @@ function getMatches(gid,census,map,click){
             d3.select(".exit_"+count).remove()
             d3.select(".text_"+count).remove()
             d3.select(".text2_"+count).remove()
+            d3.select(".slider_"+count).remove()
             map.removeLayer("tracts_filtered_east_"+count)
             map.removeLayer("tracts_filtered_west_"+count)
             map.removeLayer("tracts_highlight_east_"+count)
@@ -335,7 +365,8 @@ function getMatches(gid,census,map,click){
         .attr("class","clickText text_"+click)
         .html(text)
         .style("color",colors[click%(colors.length-1)])
-        
+    d3.select("#text").append("div")
+        .attr("class","clickText slider_"+click)
     d3.select("#text").append("div")
         .attr("class","clickText text2_"+click)
         .html(text2)
@@ -343,19 +374,19 @@ function getMatches(gid,census,map,click){
         
     slider(gid,value,category,map,census,click)
     //histo(gid,value,category)  
-  //  filterMap(filteredData,map,click)
+    filterMap(filteredData,map,click)
 }
 function slider(gid,value,category,map,census,click){
     var margin = {right: 20, left: 10}
     var width = $("#text").innerWidth()
-    var svg = d3.select(".text_"+click).append("svg").attr("width",width-margin.left).attr("height",30)
+    var svg = d3.select(".slider_"+click).append("svg").attr("width",width-margin.left).attr("height",30)
     var width = +svg.attr("width") - margin.left - margin.right
     var height = +svg.attr("height");
     var max = minMax[category].max
     var max = minMax[category].min
     var sliderRange = max/value
     var x = d3.scaleLinear()
-        .domain([0, 100])
+        .domain([1, 100])
         .range([0, width])
         .clamp(true);
 
@@ -395,7 +426,8 @@ function slider(gid,value,category,map,census,click){
               var threshold = sliderPosition
                 url.clicks[currentClick][1] = threshold
                 updateUrl(map)
-              
+                  
+                 
                 var filteredData = filterByData(census,threshold,category,value)
                 filterMap(filteredData,map,currentClick)
                 var filteredStats = calculateFiltered(filteredData,category)
@@ -408,13 +440,6 @@ function slider(gid,value,category,map,census,click){
             var currentSliderValue=10
         }else{
             var currentSliderValue = url.clicks[click][1]
-        
-            var urlCategory = "SE_"+url.clicks[click][2]
-            var filteredData = filterByData(census,currentSliderValue,urlCategory,value)
-            var filteredStats = calculateFiltered(filteredData,urlCategory)
-            var text2 = translateStats(filteredStats,currentSliderValue)
-            d3.select(".text2_"+click).html(text2)
-            filterMap(filteredData,map,click)
         }
     handle.attr("cx", x(currentSliderValue))
         
