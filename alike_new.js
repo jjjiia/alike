@@ -59,7 +59,7 @@ function setupMap(censusData){
         container: 'map',
         style: 'mapbox://styles/jjjiia123/cjdurroku5gm62sonjjyahriu',
         center: [-98, 38.88],
-        minZoom: 3,
+        minZoom: 4,
         zoom: 6
     });
     map.addControl(new MapboxGeocoder({
@@ -272,7 +272,9 @@ function slider(gid,value,category,map,census){
         .attr("transform", "translate(" + 0 + "," + height / 2 + ")");
     var handle = slider.insert("circle", ".track-overlay")
         .attr("class", "handle")
-        .attr("r", 5);
+        .attr("r", 5)
+        .style("fill",colors[clickCount%(colors.length-1)])
+        
     slider.append("line")
         .attr("class", "track")
         .attr("x1", x.range()[0])
@@ -403,7 +405,7 @@ function filterMap(filteredData,map,currentClick){
 
 function translateStats(filteredStats,threshold){
     text = filteredStats["tracts"]+" other tracts are within ±"+Math.round(threshold*100)/100+"%<br/>"
-    text = text+"or between "+filteredStats["min"]+" and "+filteredStats["max"]+"<br/>"
+    text = text+"or between "+Math.round(filteredStats["min"]*100)/100+" and "+Math.round(filteredStats["max"]*100)/100+"<br/>"
     text = text+"containing: "+filteredStats["T002_001"]+" people and "+filteredStats["T002_003"]+" sq.mi."
     return text
     var tracts = ""
