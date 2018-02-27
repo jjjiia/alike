@@ -1,7 +1,10 @@
 //show popups of mouseover already highlighted areas
-//set up slider
 //persistent url - on load, read each -[origin click gid, column],[origin click gid, column],
 //add rollover to tract ids and min and max values
+//URL Structure: center, zoomlevel, highlighted array[[clickGid,sliderValue,clickCount],[clickGid,sliderValue,clickCount]]
+//URL:
+//if url has info, get and format and set as globals to load map
+//if map moves and state changes, update url
 
 $(function() {
   	queue()
@@ -22,7 +25,53 @@ var tractNames =null
 var deviation = null
 var minMax = null
 var histogram = null
+var url = {
+    lat:null,
+    lng:null,
+    zoom:null,
+    clicks:{}
+}
+//var clicks = {}
+
+function getUrl(){    
+    var hash = window.location.hash.replace("#","").split("%")
+    if(hash.length<=1){
+        url.lng = -98
+        url.lat = 38.88
+        url.zoom = 4
+        url.clicks = {}
+        clickCount = parseInt(Object.keys(url.clicks)[Object.keys(url.clicks).length-1])
+    }
+    else{
+ //       console.log(hash)
+        url.lng = hash[2]
+        url.lat = hash[1]
+        url.zoom = hash[0]
+        console.log(hash[3])
+        url.clicks = JSON.parse(hash[3])
+        clickCount = parseInt(Object.keys(url.clicks)[Object.keys(url.clicks).length-1])
+        var clicksString = JSON.stringify(url.clicks)
+    }
+    
+    window.location.hash = url.zoom+"%"+url.lat+"%"+url.lng+"%"+clicksString
+}	
+function updateUrl(map){
+       url.zoom = Math.round(map.getZoom()*100)/100
+       url.lat = Math.round(map.getCenter().lat*100)/100
+       url.lng = Math.round(map.getCenter().lng*100)/100
+    
+     var clicksString = JSON.stringify(url.clicks)
+    window.location.hash = url.zoom+"%"+url.lat+"%"+url.lng+"%"+clicksString
+  //  console.log(clicksUrl)
+//       window.location.hash = JSON.stringify([url.center,url.zoom])   
+  //  url.center = currentHash[0]
+  //  url.zoom = currentHash.split("_")[1]
+  //  console.log(["from hash",url.center,url.zoom])
+}
+
 function dataDidLoad(error,censusData,geoNames,keys,deviationFile,minMaxFile,histogramFile){
+    getUrl()
+    
     dataDictionary = keys
     deviation = deviationFile
     tractNames = makeGeoNamesDict(geoNames)
@@ -58,14 +107,27 @@ function setupMap(censusData){
     var map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/jjjiia123/cjdurroku5gm62sonjjyahriu',
-        center: [-98, 38.88],
+        center: [url.lng,url.lat],
         minZoom: 4,
-        zoom: 6
+        zoom: url.zoom
     });
     map.addControl(new MapboxGeocoder({
         accessToken: mapboxgl.accessToken
     }));
+    map.on("move",function(){
+        updateUrl(map)
+           
+    })
     map.on('load', function() {
+        if(Object.keys(url.clicks).length>0){
+            for(var i in url.clicks){
+               // console.log(i)
+                var clickedFilter = url.clicks[i]
+                var click = 0
+                
+            }
+        }        
+        
         d3.select("#loader").remove()
         d3.select("#zoomOut")
         .on("mouseover",function(){
@@ -86,6 +148,8 @@ function setupMap(censusData){
             d3.select("#clearAll").style("background-color","rgba(120, 219, 83,1)")
         })
         .on("click",function(){
+            url.clicks = {}
+            updateUrl(map)
             d3.selectAll(".exit").remove()
             for(var i=0; i<100; i+=1){
                 d3.select(".text_"+i).remove()
@@ -147,7 +211,10 @@ function setupMap(censusData){
             var gid = e.features[0].properties[ "AFFGEOID"]
             addTracts(map,censusData,gid,"west")
             addTracts(map,censusData,gid,"east")
-            filterGeos(map,censusData,gid) 
+            filterGeos(map,censusData,gid)
+            var gidUrl = gid.split("US")[1]
+            url.clicks[clickCount]=[gidUrl,10,currentCategory]
+            updateUrl(map)
         })
       //  map.on("click",  "tracts_east", function(e) {
       //      clickCount +=1
@@ -230,6 +297,7 @@ function getMatches(gid,census,map){
         .style("text-align","right")
         .style("margin-right","20px")
         .on("click",function(){
+            var formattedId = matchedId[0].Gid.split("US")[1]
             var count = d3.select(this).attr("class").split("_")[1]
             d3.select(".exit_"+count).remove()
             d3.select(".text_"+count).remove()
@@ -238,6 +306,8 @@ function getMatches(gid,census,map){
             map.removeLayer("tracts_filtered_west_"+count)
             map.removeLayer("tracts_highlight_east_"+count)
             map.removeLayer("tracts_highlight_west_"+count)
+            delete url.clicks[count];
+            updateUrl(map)
         })
     d3.select("#text").append("div")
         .attr("class","clickText text_"+clickCount)
@@ -293,13 +363,16 @@ function slider(gid,value,category,map,census){
 //                slider.interrupt(); 
 //            })
             .on("start drag", function() { 
+                
                 var sliderPosition = x.invert(d3.event.x)
                 handle.attr("cx", x(sliderPosition))
                 var currentClick = d3.select(this).attr("clickCount")                
           // })
           // .on("end",function(){
-               var sliderPosition = x.invert(d3.event.x)
+            var sliderPosition = x.invert(d3.event.x)
               var threshold = sliderPosition
+                url.clicks[currentClick][1] = threshold
+                updateUrl(map)
                 var filteredData = filterByData(census,threshold,category,value)
                 filterMap(filteredData,map,currentClick)
                 var filteredStats = calculateFiltered(filteredData,category)
